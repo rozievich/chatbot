@@ -1,11 +1,11 @@
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.generics import ListAPIView, RetrieveAPIView
+from rest_framework.generics import ListAPIView, RetrieveAPIView, ListCreateAPIView
 from django.contrib.auth.models import User
 from django.db.models import Q
 
-from .serializers import UserModelSerializer, ChatMessageModelSerializer
-from .models import ChatMessageModel
-from .permissions import OwnerBasePermission
+from .serializers import UserModelSerializer, ChatMessageModelSerializer, ChatGroupModelSerializer
+from .models import ChatMessageModel, ChatGroups
+from .permissions import OwnerBasePermission, GroupOwnerPermission
 
 
 
@@ -27,3 +27,9 @@ class ChatMessageRetrieveAPIView(RetrieveAPIView):
     serializer_class = ChatMessageModelSerializer
     queryset = ChatMessageModel.objects.all()
     permission_classes = (OwnerBasePermission, )
+
+
+class ChatGroupModelViewSet(ModelViewSet):
+    serializer_class = ChatGroupModelSerializer
+    queryset = ChatGroups.objects.all()
+    permission_classes = (GroupOwnerPermission, )

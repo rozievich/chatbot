@@ -1,7 +1,9 @@
-from rest_framework.serializers import ModelSerializer, CharField, DateTimeField, BooleanField
+import re
+from rest_framework.serializers import ModelSerializer, CharField, DateTimeField, BooleanField, HiddenField, CurrentUserDefault
 from django.contrib.auth.models import User
+from rest_framework.exceptions import ValidationError
 
-from .models import ChatMessageModel
+from .models import ChatMessageModel, ChatGroups
 
 
 class UserModelSerializer(ModelSerializer):
@@ -21,3 +23,16 @@ class ChatMessageModelSerializer(ModelSerializer):
     class Meta:
         model = ChatMessageModel
         fields = "__all__"
+
+
+class ChatGroupModelSerializer(ModelSerializer):
+    owner = HiddenField(default=CurrentUserDefault())
+
+    class Meta:
+        model = ChatGroups
+        fields = "__all__"
+
+    def validate_username(self, username):
+        if not re.match(r"^[a-z_]+$", username) or not (5 <= len(username) <= 32):
+            raise ValidationError({"status": False, "message": "The username must be at least 5 characters and at most 32 characters long and can contain letters, numbers, and _."})
+        return username

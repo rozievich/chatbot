@@ -1,9 +1,11 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import UserModelViewSet, ChatMessageListAPIView, ChatMessageRetrieveAPIView
+from .views import UserModelViewSet, ChatMessageListAPIView, ChatMessageRetrieveAPIView, ChatGroupModelViewSet
 
 
 router = DefaultRouter()
+
+router.register("groups", ChatGroupModelViewSet, basename="groups")
 router.register(f"", UserModelViewSet, basename="users")
 
 
