@@ -29,7 +29,7 @@ urlpatterns = [
     path('chat/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('chat/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('chat/token/verify/', TokenVerifyView.as_view(), name="token_verify"),
-    path('', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path('swdoc/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
-    path('users/', include('chat.urls'))
+    path('', include('chat.urls'))
 ]

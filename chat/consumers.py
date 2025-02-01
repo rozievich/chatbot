@@ -5,7 +5,7 @@ from channels.generic.websocket import WebsocketConsumer
 from django.contrib.auth.models import User
 from django.utils import timezone
 
-from .models import ChatMessageModel
+from .models import ChatMessageModel, GroupMessages, ChatGroups
 
 
 class UserChatConsumer(WebsocketConsumer):
@@ -98,30 +98,49 @@ class UserChatConsumer(WebsocketConsumer):
 
 
 
-
-class GroupConsumer(WebsocketConsumer):
+class ChatGroupConsumer(WebsocketConsumer):
     def connect(self):
-        self.user_name = self.scope['url_route']['kwargs']['username']
-        self.chat_name = f"chat_{self.user_name}"
+        if not self.scope['user'].is_authenticated:
+            self.close()
+            return
 
+        self.user = self.scope['user']
+        self.group_username = self.scope['url_route']['kwargs']['username']
+        
+        self.group_info = ChatGroups.objects.filter(username=self.group_username).first()
+        if not self.group_info:
+            self.close()
+            return
+
+        self.group_channel_name = f"group_{self.group_username}"
         async_to_sync(self.channel_layer.group_add)(
-            self.chat_name,
+            self.group_channel_name,
             self.channel_name
         )
         self.accept()
 
+
     def disconnect(self, code):
-        async_to_sync(self.channel_layer.group_discard)(
-            self.chat_name,
-            self.channel_name
-        )
-    
+        if hasattr(self, "group_channel_name"):
+            async_to_sync(self.channel_layer.group_discard)(self.group_channel_name, self.channel_name)
+        self.close(code=code)
+
+
     def receive(self, text_data=None, bytes_data=None):
         async_to_sync(self.channel_layer.group_send)(
-            self.chat_name,
-            {"type": "chat.message", "message": text_data}
+            self.group_channel_name,
+            {
+                "type": "chat.message",
+                "sender": self.user.username,
+                "message": text_data
+            }
         )
-    
+
     def chat_message(self, event):
         message = event['message']
-        self.send(text_data=message)
+        sender = event['sender']
+        created_at = str(timezone.now())
+
+        GroupMessages.objects.create(group=self.group_info, from_user=self.user, message=message, created_at=created_at, update_at=created_at)
+        
+        self.send(text_data=json.dumps({"sender": sender, "message": message, "created_at": created_at}))

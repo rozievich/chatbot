@@ -1,16 +1,18 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import UserModelViewSet, ChatMessageListAPIView, ChatMessageRetrieveAPIView, ChatGroupModelViewSet
+from .views import UserModelViewSet, ChatMessageListAPIView, ChatMessageRetrieveAPIView, ChatGroupModelViewSet, ChatGroupMessageListAPIView, ChatGroupMessageRetrieveUpdateDestroyAPIView
 
 
 router = DefaultRouter()
 
 router.register("groups", ChatGroupModelViewSet, basename="groups")
-router.register(f"", UserModelViewSet, basename="users")
+router.register("users", UserModelViewSet, basename="users")
 
 
 urlpatterns = [
+    path('group-messages/', ChatGroupMessageListAPIView.as_view(), name="get_group_messages"),
+    path('group-messages/<int:pk>/', ChatGroupMessageRetrieveUpdateDestroyAPIView.as_view(), name="group_messages"),
     path('messages/', ChatMessageListAPIView.as_view(), name="all_messages"),
-    path('message/<int:pk>/', ChatMessageRetrieveAPIView.as_view(), name="get_message"),
+    path('messages/<int:pk>/', ChatMessageRetrieveAPIView.as_view(), name="get_message"),
     path('', include(router.urls)),
 ]
