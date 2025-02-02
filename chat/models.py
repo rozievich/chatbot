@@ -3,8 +3,8 @@ from django.contrib.auth.models import User
 
 
 class ChatMessage(models.Model):
-    from_user = models.ForeignKey(User, on_delete=models.SET_DEFAULT, related_name="send_messages", default="Deleted account")
-    to_user = models.ForeignKey(User, on_delete=models.SET_DEFAULT, related_name="received_messages", default="Deleted account")
+    from_user = models.ForeignKey(User, on_delete=models.SET_NULL, related_name="send_messages", null=True)
+    to_user = models.ForeignKey(User, on_delete=models.SET_NULL, related_name="received_messages", null=True)
     message = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -34,7 +34,7 @@ class ChatGroup(models.Model):
 
 class GroupMessage(models.Model):
     group = models.ForeignKey(ChatGroup, on_delete=models.CASCADE)
-    from_user = models.ForeignKey(User, on_delete=models.SET_DEFAULT, default="Deleted account")
+    from_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     message = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     update_at = models.DateTimeField(auto_now=True)
@@ -50,7 +50,7 @@ class GroupMessage(models.Model):
 
 class GroupMember(models.Model):
     group = models.ForeignKey(ChatGroup, on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.SET_DEFAULT, default="Deleted account")
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

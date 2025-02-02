@@ -1,10 +1,12 @@
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.generics import ListAPIView, RetrieveAPIView, RetrieveUpdateDestroyAPIView
+from rest_framework.generics import ListAPIView, RetrieveAPIView, RetrieveUpdateDestroyAPIView, ListCreateAPIView, RetrieveDestroyAPIView
 from django.contrib.auth.models import User
 from django.db.models import Q
+from rest_framework.response import Response
+from rest_framework.status import HTTP_204_NO_CONTENT
 
-from .serializers import UserModelSerializer, ChatMessageModelSerializer, ChatGroupModelSerializer, ChatGroupMessageModelSerializer
-from .models import ChatMessage, ChatGroup, GroupMessage
+from .serializers import UserModelSerializer, ChatMessageModelSerializer, ChatGroupModelSerializer, ChatGroupMessageModelSerializer, GroupMemberModelSerializer
+from .models import ChatMessage, ChatGroup, GroupMessage, GroupMember
 from .permissions import OwnerBasePermission, GroupOwnerPermission
 
 
@@ -12,6 +14,12 @@ from .permissions import OwnerBasePermission, GroupOwnerPermission
 class UserModelViewSet(ModelViewSet):
     serializer_class = UserModelSerializer
     queryset = User.objects.all()
+
+    def delete(self, request, *args, **kwargs):
+        user = request.user
+        user.is_active = False
+        user.save()
+        return Response({"message": "User deactivated, token is now invalid"}, status=HTTP_204_NO_CONTENT)
 
 
 class ChatMessageListAPIView(ListAPIView):
@@ -43,3 +51,14 @@ class ChatGroupMessageListAPIView(ListAPIView):
 class ChatGroupMessageRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
     serializer_class = ChatGroupMessageModelSerializer
     queryset = GroupMessage.objects.all()
+
+
+class GroupMemberListCreateAPIView(ListCreateAPIView):
+    serializer_class = GroupMemberModelSerializer
+    queryset = GroupMember.objects.all()
+
+
+class GroupMemberRetrieveDestroyAPIView(RetrieveDestroyAPIView):
+    serializer_class = GroupMemberModelSerializer
+    queryset = GroupMember.objects.all()
+    lookup_field = "group_id"

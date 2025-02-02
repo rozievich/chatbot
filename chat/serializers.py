@@ -3,7 +3,7 @@ from rest_framework.serializers import ModelSerializer, CharField, DateTimeField
 from django.contrib.auth.models import User
 from rest_framework.exceptions import ValidationError
 
-from .models import ChatMessage, ChatGroup, GroupMessage
+from .models import ChatMessage, ChatGroup, GroupMessage, GroupMember
 
 
 class UserModelSerializer(ModelSerializer):
@@ -43,3 +43,10 @@ class ChatGroupMessageModelSerializer(ModelSerializer):
         model = GroupMessage
         fields = "__all__"
 
+
+class GroupMemberModelSerializer(ModelSerializer):
+    user = CurrentUserDefault()
+    
+    class Meta:
+        model = GroupMember
+        fields = "__all__"
