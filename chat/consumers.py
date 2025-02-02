@@ -100,19 +100,17 @@ class UserChatConsumer(WebsocketConsumer):
 
 class ChatGroupConsumer(WebsocketConsumer):
     def connect(self):
-        if not self.scope['user'].is_authenticated:
-            self.close()
-            return
+        """Foydalanuvchini tekshirish va chat guruhiga qo'shish"""
+        self.user = self.scope.get("user")
+        if not self.user or not self.user.is_authenticated:
+            return self.close()
 
-        self.user = self.scope['user']
-        self.group_username = self.scope['url_route']['kwargs']['username']
-        
-        self.group_info = ChatGroups.objects.filter(username=self.group_username).first()
+        group_username = self.scope['url_route']['kwargs']['username']        
+        self.group_info = ChatGroups.objects.filter(username=group_username).first()
         if not self.group_info:
-            self.close()
-            return
+            return self.close()
 
-        self.group_channel_name = f"group_{self.group_username}"
+        self.group_channel_name = f"group_{group_username}"
         async_to_sync(self.channel_layer.group_add)(
             self.group_channel_name,
             self.channel_name
@@ -121,12 +119,17 @@ class ChatGroupConsumer(WebsocketConsumer):
 
 
     def disconnect(self, code):
+        """Foydalanuvchini chat guruhidan chiqarish"""
         if hasattr(self, "group_channel_name"):
             async_to_sync(self.channel_layer.group_discard)(self.group_channel_name, self.channel_name)
         self.close(code=code)
 
 
     def receive(self, text_data=None, bytes_data=None):
+        """Xabarlarni qabul qilish va yuborish"""
+        if not text_data:
+            return
+        
         async_to_sync(self.channel_layer.group_send)(
             self.group_channel_name,
             {
@@ -141,6 +144,12 @@ class ChatGroupConsumer(WebsocketConsumer):
         sender = event['sender']
         created_at = str(timezone.now())
 
-        GroupMessages.objects.create(group=self.group_info, from_user=self.user, message=message, created_at=created_at, update_at=created_at)
-        
+        GroupMessages.objects.create(
+            group=self.group_info,
+            from_user=self.user,
+            message=message,
+            created_at=created_at,
+            update_at=created_at
+        )
+
         self.send(text_data=json.dumps({"sender": sender, "message": message, "created_at": created_at}))
