@@ -5,7 +5,7 @@ from channels.generic.websocket import WebsocketConsumer
 from django.contrib.auth.models import User
 from django.utils import timezone
 
-from .models import ChatMessageModel, GroupMessages, ChatGroups
+from .models import ChatMessage, GroupMessage, ChatGroup
 
 
 class UserChatConsumer(WebsocketConsumer):
@@ -93,7 +93,7 @@ class UserChatConsumer(WebsocketConsumer):
     def _save_message(self, message_text, receiver_user):
         """Save message to database"""
         if self.sender_user.is_authenticated and receiver_user.is_authenticated:
-            ChatMessageModel.objects.create(from_user=self.sender_user, to_user=receiver_user, message=message_text)
+            ChatMessage.objects.create(from_user=self.sender_user, to_user=receiver_user, message=message_text)
 
 
 
@@ -106,7 +106,7 @@ class ChatGroupConsumer(WebsocketConsumer):
             return self.close()
 
         group_username = self.scope['url_route']['kwargs']['username']        
-        self.group_info = ChatGroups.objects.filter(username=group_username).first()
+        self.group_info = ChatGroup.objects.filter(username=group_username).first()
         if not self.group_info:
             return self.close()
 
@@ -144,7 +144,7 @@ class ChatGroupConsumer(WebsocketConsumer):
         sender = event['sender']
         created_at = str(timezone.now())
 
-        GroupMessages.objects.create(
+        GroupMessage.objects.create(
             group=self.group_info,
             from_user=self.user,
             message=message,

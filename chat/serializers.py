@@ -3,7 +3,7 @@ from rest_framework.serializers import ModelSerializer, CharField, DateTimeField
 from django.contrib.auth.models import User
 from rest_framework.exceptions import ValidationError
 
-from .models import ChatMessageModel, ChatGroups, GroupMessages
+from .models import ChatMessage, ChatGroup, GroupMessage
 
 
 class UserModelSerializer(ModelSerializer):
@@ -21,7 +21,7 @@ class UserModelSerializer(ModelSerializer):
 
 class ChatMessageModelSerializer(ModelSerializer):
     class Meta:
-        model = ChatMessageModel
+        model = ChatMessage
         fields = "__all__"
 
 
@@ -29,7 +29,7 @@ class ChatGroupModelSerializer(ModelSerializer):
     owner = HiddenField(default=CurrentUserDefault())
 
     class Meta:
-        model = ChatGroups
+        model = ChatGroup
         fields = "id", "name", "username", "owner", "created_at"
 
     def validate_username(self, username):
@@ -40,6 +40,6 @@ class ChatGroupModelSerializer(ModelSerializer):
 
 class ChatGroupMessageModelSerializer(ModelSerializer):
     class Meta:
-        model = GroupMessages
+        model = GroupMessage
         fields = "__all__"
 

@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from django.db.models import Q
 
 from .serializers import UserModelSerializer, ChatMessageModelSerializer, ChatGroupModelSerializer, ChatGroupMessageModelSerializer
-from .models import ChatMessageModel, ChatGroups, GroupMessages
+from .models import ChatMessage, ChatGroup, GroupMessage
 from .permissions import OwnerBasePermission, GroupOwnerPermission
 
 
@@ -16,30 +16,30 @@ class UserModelViewSet(ModelViewSet):
 
 class ChatMessageListAPIView(ListAPIView):
     serializer_class = ChatMessageModelSerializer
-    queryset = ChatMessageModel.objects.all()
+    queryset = ChatMessage.objects.all()
 
     def get_queryset(self):
         username = self.request.user.username
-        return ChatMessageModel.objects.filter(Q(from_user__username=username) | Q(to_user__username=username))
+        return ChatMessage.objects.filter(Q(from_user__username=username) | Q(to_user__username=username))
 
 
 class ChatMessageRetrieveAPIView(RetrieveAPIView):
     serializer_class = ChatMessageModelSerializer
-    queryset = ChatMessageModel.objects.all()
+    queryset = ChatMessage.objects.all()
     permission_classes = (OwnerBasePermission, )
 
 
 class ChatGroupModelViewSet(ModelViewSet):
     serializer_class = ChatGroupModelSerializer
-    queryset = ChatGroups.objects.all()
+    queryset = ChatGroup.objects.all()
     permission_classes = (GroupOwnerPermission, )
 
 
 class ChatGroupMessageListAPIView(ListAPIView):
     serializer_class = ChatGroupMessageModelSerializer
-    queryset = GroupMessages.objects.all()
+    queryset = GroupMessage.objects.all()
 
 
 class ChatGroupMessageRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
     serializer_class = ChatGroupMessageModelSerializer
-    queryset = GroupMessages.objects.all()
+    queryset = GroupMessage.objects.all()
