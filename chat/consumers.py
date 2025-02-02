@@ -5,7 +5,7 @@ from channels.generic.websocket import WebsocketConsumer
 from django.contrib.auth.models import User
 from django.utils import timezone
 
-from .models import ChatMessage, GroupMessage, ChatGroup
+from .models import ChatMessage, GroupMessage, ChatGroup, GroupMember
 
 
 class UserChatConsumer(WebsocketConsumer):
@@ -110,6 +110,10 @@ class ChatGroupConsumer(WebsocketConsumer):
         if not self.group_info:
             return self.close()
 
+        check_user_group = GroupMember.objects.filter(group=self.group_info, user=self.user).first()
+        if not check_user_group:
+            return self.close()
+        
         self.group_channel_name = f"group_{group_username}"
         async_to_sync(self.channel_layer.group_add)(
             self.group_channel_name,

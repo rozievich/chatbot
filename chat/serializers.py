@@ -1,7 +1,8 @@
 import re
-from rest_framework.serializers import ModelSerializer, CharField, DateTimeField, BooleanField, HiddenField, CurrentUserDefault, SerializerMethodField
-from django.contrib.auth.models import User
+from rest_framework import status
+from rest_framework.serializers import ModelSerializer, CharField, DateTimeField, BooleanField, HiddenField, CurrentUserDefault
 from rest_framework.exceptions import ValidationError
+from django.contrib.auth.models import User
 
 from .models import ChatMessage, ChatGroup, GroupMessage, GroupMember
 
@@ -45,8 +46,21 @@ class ChatGroupMessageModelSerializer(ModelSerializer):
 
 
 class GroupMemberModelSerializer(ModelSerializer):
-    user = CurrentUserDefault()
-    
+    user = HiddenField(default=CurrentUserDefault())
+
     class Meta:
         model = GroupMember
         fields = "__all__"
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['user'] = instance.user.id
+        return representation
+
+    def validate(self, attrs):
+        user = attrs.get('user')
+        group = attrs.get('group')
+        check_data = GroupMember.objects.filter(group=group, user=user).first()
+        if check_data:
+            raise ValidationError({"message": "You are already subscribed to this group."})
+        return attrs
