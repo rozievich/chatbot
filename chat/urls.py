@@ -11,12 +11,10 @@ from .views import (
     GroupMemberRetrieveDestroyAPIView
 )
 
-
 router = DefaultRouter()
 
 router.register("groups", ChatGroupModelViewSet, basename="groups")
 router.register("users", UserModelViewSet, basename="users")
-
 
 urlpatterns = [
     path('group-member/', GroupMemberListCreateAPIView.as_view(), name="group_member"),

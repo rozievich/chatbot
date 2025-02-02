@@ -9,7 +9,6 @@ from rest_framework_simplejwt.views import (
     TokenVerifyView
 )
 
-
 schema_view = get_schema_view(
     openapi.Info(
         title="ChatBot API",
@@ -20,9 +19,8 @@ schema_view = get_schema_view(
         license=openapi.License(name="BSD License")
     ),
     public=True,
-    permission_classes=(AllowAny, )
+    permission_classes=(AllowAny,)
 )
-
 
 urlpatterns = [
     path('admin/', admin.site.urls),

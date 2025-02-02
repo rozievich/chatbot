@@ -1,14 +1,15 @@
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.generics import ListAPIView, RetrieveAPIView, RetrieveUpdateDestroyAPIView, ListCreateAPIView, RetrieveDestroyAPIView
+from rest_framework.generics import ListAPIView, RetrieveAPIView, RetrieveUpdateDestroyAPIView, ListCreateAPIView, \
+    RetrieveDestroyAPIView
 from django.contrib.auth.models import User
 from django.db.models import Q
 from rest_framework.response import Response
 from rest_framework import status
 
-from .serializers import UserModelSerializer, ChatMessageModelSerializer, ChatGroupModelSerializer, ChatGroupMessageModelSerializer, GroupMemberModelSerializer
+from .serializers import UserModelSerializer, ChatMessageModelSerializer, ChatGroupModelSerializer, \
+    ChatGroupMessageModelSerializer, GroupMemberModelSerializer
 from .models import ChatMessage, ChatGroup, GroupMessage, GroupMember
 from .permissions import OwnerBasePermission, GroupOwnerPermission
-
 
 
 class UserModelViewSet(ModelViewSet):
@@ -34,13 +35,13 @@ class ChatMessageListAPIView(ListAPIView):
 class ChatMessageRetrieveAPIView(RetrieveAPIView):
     serializer_class = ChatMessageModelSerializer
     queryset = ChatMessage.objects.all()
-    permission_classes = (OwnerBasePermission, )
+    permission_classes = (OwnerBasePermission,)
 
 
 class ChatGroupModelViewSet(ModelViewSet):
     serializer_class = ChatGroupModelSerializer
     queryset = ChatGroup.objects.all()
-    permission_classes = (GroupOwnerPermission, )
+    permission_classes = (GroupOwnerPermission,)
 
 
 class ChatGroupMessageListAPIView(ListAPIView):
@@ -69,6 +70,6 @@ class GroupMemberRetrieveDestroyAPIView(RetrieveDestroyAPIView):
 
         if not group_info:
             return Response({"message": "You are not a member of this group."}, status=status.HTTP_404_NOT_FOUND)
-        
+
         group_info.delete()
         return Response({"message": "You have successfully left the group."}, status=status.HTTP_204_NO_CONTENT)
