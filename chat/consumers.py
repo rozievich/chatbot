@@ -1,11 +1,13 @@
 import json
+import redis
 
 from asgiref.sync import async_to_sync
 from channels.generic.websocket import WebsocketConsumer
-from django.contrib.auth.models import User
 from django.utils import timezone
 
-from .models import ChatMessage, GroupMessage, ChatGroup, GroupMember
+from .models import ChatMessage, GroupMessage, ChatGroup, GroupMember, CustomUser
+
+redis_client = redis.StrictRedis(host='127.0.0.1', port=6379, db=0, decode_responses=True)
 
 
 class UserChatConsumer(WebsocketConsumer):
@@ -15,9 +17,11 @@ class UserChatConsumer(WebsocketConsumer):
             return
 
         self.sender_user = self.scope['user']
+        self._check_user_online()
         self.accept()
 
     def disconnect(self, code):
+        self._update_last_online()
         if hasattr(self, "user_chat_name"):
             async_to_sync(self.channel_layer.group_discard)(self.user_chat_name, self.channel_name)
         self.close(code=code)
@@ -48,6 +52,17 @@ class UserChatConsumer(WebsocketConsumer):
         self.send(text_data=json.dumps(
             {"receiver": receiver, "sender": sender, "message": message, "created_at": created_at}))
 
+    def _update_last_online(self):
+        online_user = redis_client.sismember("online_users", self.sender_user.id)
+        if online_user:
+            redis_client.srem("online_users", self.sender_user.id)
+            CustomUser.objects.filter(id=self.sender_user.id).update(last_online=timezone.now())
+
+    def _check_user_online(self):
+        online_user = redis_client.sismember("online_users", self.sender_user.id)
+        if not online_user:
+            redis_client.sadd("online_users", self.sender_user.id)
+
     def _extract_message_data(self, text_data=None):
         """Extract message data"""
         try:
@@ -58,7 +73,7 @@ class UserChatConsumer(WebsocketConsumer):
 
     def _get_receiver_user(self, receiver_username: str):
         """Get receiver user info"""
-        return User.objects.filter(username=receiver_username).first()
+        return CustomUser.objects.filter(username=receiver_username).first()
 
     def _generate_user_chat_name(self, receiver_user):
         """Generate chat channel name"""

@@ -1,13 +1,14 @@
 import re
+import redis
 from rest_framework.serializers import ModelSerializer, CharField, DateTimeField, BooleanField, HiddenField, \
     CurrentUserDefault
 from rest_framework.exceptions import ValidationError
-from django.contrib.auth.models import User
 
-from .models import ChatMessage, ChatGroup, GroupMessage, GroupMember
+from .models import ChatMessage, ChatGroup, GroupMessage, GroupMember, CustomUser
+from .consumers import redis_client
 
 
-class UserModelSerializer(ModelSerializer):
+class CustomUserModelSerializer(ModelSerializer):
     username = CharField(max_length=32, default="string")
     password = CharField(max_length=250, write_only=True, default="string")
     date_joined = DateTimeField(read_only=True)
@@ -16,8 +17,15 @@ class UserModelSerializer(ModelSerializer):
     is_superuser = BooleanField(read_only=True)
 
     class Meta:
-        model = User
+        model = CustomUser
         exclude = "groups", "user_permissions"
+
+    def to_representation(self, instance):
+        represantation = super().to_representation(instance)
+        user_status = redis_client.sismember("online_users", represantation['id'])
+        if user_status:
+            represantation['last_online'] = "online"
+        return represantation
 
 
 class ChatMessageModelSerializer(ModelSerializer):

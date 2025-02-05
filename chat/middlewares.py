@@ -4,13 +4,15 @@ from channels.db import database_sync_to_async
 from rest_framework_simplejwt.tokens import AccessToken
 from django.contrib.auth import get_user_model
 
+from .models import CustomUser
+
 User = get_user_model()
 
 
 @database_sync_to_async
 def get_user(user_id):
     try:
-        return User.objects.filter(id=user_id).first()
+        return CustomUser.objects.filter(id=user_id).first()
     except User.DoesNotExist:
         return AnonymousUser()
 

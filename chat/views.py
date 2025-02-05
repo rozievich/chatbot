@@ -1,4 +1,4 @@
-from webpush import send_user_notification, send_group_notification
+from webpush import send_user_notification
 from webpush.models import SubscriptionInfo
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -6,20 +6,19 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView, RetrieveAPIView, RetrieveUpdateDestroyAPIView, ListCreateAPIView, \
     RetrieveDestroyAPIView
-from django.contrib.auth.models import User
 from django.db.models import Q
 from rest_framework.response import Response
 from rest_framework import status
 
-from .serializers import UserModelSerializer, ChatMessageModelSerializer, ChatGroupModelSerializer, \
+from .serializers import CustomUserModelSerializer, ChatMessageModelSerializer, ChatGroupModelSerializer, \
     ChatGroupMessageModelSerializer, GroupMemberModelSerializer
-from .models import ChatMessage, ChatGroup, GroupMessage, GroupMember
+from .models import ChatMessage, ChatGroup, GroupMessage, GroupMember, CustomUser
 from .permissions import OwnerBasePermission, GroupOwnerPermission
 
 
 class UserModelViewSet(ModelViewSet):
-    serializer_class = UserModelSerializer
-    queryset = User.objects.all()
+    serializer_class = CustomUserModelSerializer
+    queryset = CustomUser.objects.all()
 
     def delete(self, request, *args, **kwargs):
         user = request.user
