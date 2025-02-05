@@ -7,6 +7,7 @@ DEBUG = True
 ALLOWED_HOSTS = ["*"]
 
 INSTALLED_APPS = [
+    'webpush',
     'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -102,6 +103,12 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication'
     ]
+}
+
+WEBPUSH_SETTINGS = {
+    "VAPID_PUBLIC_KEY": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE0fmTafb0W7jgH1M7ZKNU8AZnsSDyAQ1Y6SmlRufhjaFKS4oLVlD23NXIhEpgIGY3QI50ij+okWtOogzQMyRa5Q==",
+    "VAPID_PRIVATE_KEY": "MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgiLCy/ycV0CmLWDbEKD3lnSZynThHbud0X1qDnc4ZUfKhRANCAATR+ZNp9vRbuOAfUztko1TwBmexIPIBDVjpKaVG5+GNoUpLigtWUPbc1ciESmAgZjdAjnSKP6iRa06iDNAzJFrl",
+    "VAPID_ADMIN_EMAIL": "oybekrozievich@gmail.com"
 }
 
 SWAGGER_SETTINGS = {

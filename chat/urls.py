@@ -8,7 +8,9 @@ from .views import (
     ChatGroupMessageListAPIView,
     ChatGroupMessageRetrieveUpdateDestroyAPIView,
     GroupMemberListCreateAPIView,
-    GroupMemberRetrieveDestroyAPIView
+    GroupMemberRetrieveDestroyAPIView,
+    SendNotificationAPIView,
+    SaveNotificationAPIView
 )
 
 router = DefaultRouter()
@@ -17,6 +19,8 @@ router.register("groups", ChatGroupModelViewSet, basename="groups")
 router.register("users", UserModelViewSet, basename="users")
 
 urlpatterns = [
+    path('send-push/', SendNotificationAPIView.as_view(), name="save_push_notification"),
+    path('save-push/', SaveNotificationAPIView.as_view(), name="save_push_notification"),
     path('group-member/', GroupMemberListCreateAPIView.as_view(), name="group_member"),
     path('group-member/<int:group_id>/', GroupMemberRetrieveDestroyAPIView.as_view(), name="group_member_delete"),
     path('group-messages/', ChatGroupMessageListAPIView.as_view(), name="get_group_messages"),
