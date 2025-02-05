@@ -1,8 +1,12 @@
+import os
 from pathlib import Path
 from datetime import timedelta
+from dotenv import load_dotenv
+
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-SECRET_KEY = 'django-insecure-@t4ze$)azjm_i63!6&2*3z0avw6$+s)ij0hjr&obh185j5h4ed'
+SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = True
 ALLOWED_HOSTS = ["*"]
 
@@ -106,9 +110,9 @@ REST_FRAMEWORK = {
 }
 
 WEBPUSH_SETTINGS = {
-    "VAPID_PUBLIC_KEY": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE0fmTafb0W7jgH1M7ZKNU8AZnsSDyAQ1Y6SmlRufhjaFKS4oLVlD23NXIhEpgIGY3QI50ij+okWtOogzQMyRa5Q==",
-    "VAPID_PRIVATE_KEY": "MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgiLCy/ycV0CmLWDbEKD3lnSZynThHbud0X1qDnc4ZUfKhRANCAATR+ZNp9vRbuOAfUztko1TwBmexIPIBDVjpKaVG5+GNoUpLigtWUPbc1ciESmAgZjdAjnSKP6iRa06iDNAzJFrl",
-    "VAPID_ADMIN_EMAIL": "oybekrozievich@gmail.com"
+    "VAPID_PUBLIC_KEY": os.getenv("VAPID_PUBLIC_KEY"),
+    "VAPID_PRIVATE_KEY": os.getenv("VAPID_PRIVATE_KEY"),
+    "VAPID_ADMIN_EMAIL": os.getenv("VAPID_ADMIN_EMAIL")
 }
 
 SWAGGER_SETTINGS = {
