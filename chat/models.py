@@ -27,7 +27,7 @@ class ChatGroup(models.Model):
     owner = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     name = models.CharField(max_length=128)
     username = models.CharField(max_length=32, unique=True)
-    members = models.ManyToManyField(CustomUser, related_name="groups")
+    members = models.ManyToManyField(CustomUser, related_name="chat_groups")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -44,7 +44,7 @@ class GroupMessage(models.Model):
     from_user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     message = models.TextField()
     is_delivery = models.ManyToManyField(CustomUser, related_name="delivery_messages", blank=True)
-    is_read = models.ManyToManyField(CustomUser, related_name="delivery_messages", blank=True)
+    is_read = models.ManyToManyField(CustomUser, related_name="read_messages", blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     update_at = models.DateTimeField(auto_now=True)
 

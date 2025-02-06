@@ -1,7 +1,7 @@
 import re
 import redis
 from rest_framework.serializers import ModelSerializer, CharField, DateTimeField, BooleanField, HiddenField, \
-    CurrentUserDefault
+    CurrentUserDefault, PrimaryKeyRelatedField, StringRelatedField
 from rest_framework.exceptions import ValidationError
 
 from .models import ChatMessage, ChatGroup, GroupMessage, GroupMember, CustomUser
@@ -36,10 +36,11 @@ class ChatMessageModelSerializer(ModelSerializer):
 
 class ChatGroupModelSerializer(ModelSerializer):
     owner = HiddenField(default=CurrentUserDefault())
+    members = PrimaryKeyRelatedField(queryset=CustomUser.objects.all(), many=True)
 
     class Meta:
         model = ChatGroup
-        fields = "id", "name", "username", "owner", "created_at"
+        fields = "id", "name", "username", "owner", "created_at", "members"
 
     def validate_username(self, username):
         if not re.match(r"^[a-z0-9_]+$", username) or not (5 <= len(username) <= 32):
@@ -48,6 +49,8 @@ class ChatGroupModelSerializer(ModelSerializer):
 
 
 class ChatGroupMessageModelSerializer(ModelSerializer):
+    is_delivery = StringRelatedField(many=True)
+
     class Meta:
         model = GroupMessage
         fields = "__all__"

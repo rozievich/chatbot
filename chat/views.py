@@ -60,7 +60,7 @@ class ChatGroupMessageRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView)
 
 class GroupMemberListCreateAPIView(ListCreateAPIView):
     serializer_class = GroupMemberModelSerializer
-    queryset = GroupMember.objects.all()
+    queryset = ChatGroup.objects.all()
 
 
 class GroupMemberRetrieveDestroyAPIView(RetrieveDestroyAPIView):
