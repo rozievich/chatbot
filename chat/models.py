@@ -10,6 +10,8 @@ class ChatMessage(models.Model):
     from_user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="send_messages")
     to_user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="received_messages")
     message = models.TextField(blank=True, null=True)
+    is_delivery = models.BooleanField(default=False)
+    is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -40,6 +42,8 @@ class GroupMessage(models.Model):
     group = models.ForeignKey(ChatGroup, on_delete=models.CASCADE)
     from_user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     message = models.TextField()
+    is_delivery = models.DateTimeField(default=False)
+    is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     update_at = models.DateTimeField(auto_now=True)
 

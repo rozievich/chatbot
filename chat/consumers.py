@@ -19,6 +19,7 @@ class UserChatConsumer(WebsocketConsumer):
         self.sender_user = self.scope['user']
         self._check_user_online()
         self.accept()
+        self._delivery_user_messages()
 
     def disconnect(self, code):
         self._update_last_online()
@@ -100,7 +101,25 @@ class UserChatConsumer(WebsocketConsumer):
     def _save_message(self, message_text, receiver_user):
         """Save message to database"""
         if self.sender_user.is_authenticated and receiver_user.is_authenticated:
-            ChatMessage.objects.create(from_user=self.sender_user, to_user=receiver_user, message=message_text)
+            client_status = redis_client.sismember("online_users", receiver_user.id)
+            if client_status:
+                ChatMessage.objects.create(from_user=self.sender_user, to_user=receiver_user, message=message_text, is_delivery=True)
+            else:
+                ChatMessage.objects.create(from_user=self.sender_user, to_user=receiver_user, message=message_text)
+
+    def _delivery_user_messages(self):
+        undelivery_messages = ChatMessage.objects.filter(to_user=self.sender_user, is_delivery=False)
+        for msg in undelivery_messages:
+            self.send(text_data=json.dumps(
+                {
+                    "receiver": self.sender_user.username,
+                    "sender": msg.from_user.username,
+                    "created_at": str(msg.created_at),
+                    "message": msg.message
+                }
+            ))
+            msg.is_delivery = True
+            msg.save()
 
 
 class ChatGroupConsumer(WebsocketConsumer):
