@@ -1,10 +1,9 @@
 import re
-import redis
 from rest_framework.serializers import ModelSerializer, CharField, DateTimeField, BooleanField, HiddenField, \
     CurrentUserDefault, PrimaryKeyRelatedField, StringRelatedField
 from rest_framework.exceptions import ValidationError
 
-from .models import ChatMessage, ChatGroup, GroupMessage, GroupMember, CustomUser
+from .models import ChatMessage, ChatGroup, GroupMessage, CustomUser
 from .consumers import redis_client
 
 
@@ -25,6 +24,7 @@ class CustomUserModelSerializer(ModelSerializer):
         user_status = redis_client.sismember("online_users", represantation['id'])
         if user_status:
             represantation['last_online'] = "online"
+        represantation['groups'] = [{"id": group.id, "name": group.name, "username": group.username} for group in instance.chat_groups.all()]
         return represantation
 
 
@@ -54,24 +54,3 @@ class ChatGroupMessageModelSerializer(ModelSerializer):
     class Meta:
         model = GroupMessage
         fields = "__all__"
-
-
-class GroupMemberModelSerializer(ModelSerializer):
-    user = HiddenField(default=CurrentUserDefault())
-
-    class Meta:
-        model = GroupMember
-        fields = "__all__"
-
-    def to_representation(self, instance):
-        representation = super().to_representation(instance)
-        representation['user'] = instance.user.id
-        return representation
-
-    def validate(self, attrs):
-        user = attrs.get('user')
-        group = attrs.get('group')
-        check_data = GroupMember.objects.filter(group=group, user=user).first()
-        if check_data:
-            raise ValidationError({"message": "You are already subscribed to this group."})
-        return attrs

@@ -4,21 +4,21 @@ from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.views import APIView
-from rest_framework.generics import ListAPIView, RetrieveAPIView, RetrieveUpdateDestroyAPIView, ListCreateAPIView, \
-    RetrieveDestroyAPIView
+from rest_framework.generics import ListAPIView, RetrieveAPIView, RetrieveUpdateDestroyAPIView, DestroyAPIView
 from django.db.models import Q
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 
-from .serializers import CustomUserModelSerializer, ChatMessageModelSerializer, ChatGroupModelSerializer, \
-    ChatGroupMessageModelSerializer, GroupMemberModelSerializer
-from .models import ChatMessage, ChatGroup, GroupMessage, GroupMember, CustomUser
+from .serializers import CustomUserModelSerializer, ChatMessageModelSerializer, ChatGroupModelSerializer, ChatGroupMessageModelSerializer
+from .models import ChatMessage, ChatGroup, GroupMessage, CustomUser
 from .permissions import OwnerBasePermission, GroupOwnerPermission
 
 
 class UserModelViewSet(ModelViewSet):
     serializer_class = CustomUserModelSerializer
     queryset = CustomUser.objects.all()
+    permission_classes = (IsAuthenticated, )
 
     def delete(self, request, *args, **kwargs):
         user = request.user
@@ -30,6 +30,7 @@ class UserModelViewSet(ModelViewSet):
 class ChatMessageListAPIView(ListAPIView):
     serializer_class = ChatMessageModelSerializer
     queryset = ChatMessage.objects.all()
+    permission_classes = (IsAuthenticated, )
 
     def get_queryset(self):
         username = self.request.user.username
@@ -39,47 +40,74 @@ class ChatMessageListAPIView(ListAPIView):
 class ChatMessageRetrieveAPIView(RetrieveAPIView):
     serializer_class = ChatMessageModelSerializer
     queryset = ChatMessage.objects.all()
-    permission_classes = (OwnerBasePermission,)
+    permission_classes = (IsAuthenticated, OwnerBasePermission)
 
 
 class ChatGroupModelViewSet(ModelViewSet):
     serializer_class = ChatGroupModelSerializer
     queryset = ChatGroup.objects.all()
-    permission_classes = (GroupOwnerPermission,)
+    permission_classes = (IsAuthenticated, GroupOwnerPermission)
 
 
 class ChatGroupMessageListAPIView(ListAPIView):
     serializer_class = ChatGroupMessageModelSerializer
     queryset = GroupMessage.objects.all()
+    permission_classes = (IsAuthenticated, )
 
 
 class ChatGroupMessageRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
     serializer_class = ChatGroupMessageModelSerializer
     queryset = GroupMessage.objects.all()
+    permission_classes = (IsAuthenticated, )
 
 
-class GroupMemberListCreateAPIView(ListCreateAPIView):
-    serializer_class = GroupMemberModelSerializer
+class GroupMemberAPIView(APIView):
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                "group_id": openapi.Schema(type=openapi.TYPE_INTEGER)
+            },
+            required=['group_id']
+        )
+    )
+
+    def post(self, request, *args, **kwargs):
+        group_id = request.data.get("group_id")
+        
+        group_info = ChatGroup.objects.filter(pk=group_id).first()
+        if not group_info:
+            return Response({"message": "Group not found!"}, status=status.HTTP_404_NOT_FOUND)
+        
+        if group_info.members.filter(id=request.user.id).exists():
+            return Response({"message": "The user is already subscribed to this group!"}, status=status.HTTP_409_CONFLICT)
+        
+        group_info.members.add(request.user)
+        return Response({"message": "You have successfully subscribed to the group!"}, status=status.HTTP_200_OK)
+
+
+class GroupMemberDestroyAPIView(DestroyAPIView):
+    serializer_class = ChatGroupModelSerializer
     queryset = ChatGroup.objects.all()
-
-
-class GroupMemberRetrieveDestroyAPIView(RetrieveDestroyAPIView):
-    serializer_class = GroupMemberModelSerializer
-    queryset = GroupMember.objects.all()
-    lookup_field = "group_id"
+    permission_classes = (IsAuthenticated, )
 
     def delete(self, request, *args, **kwargs):
         group_id = kwargs.get('group_id')
-        group_info = GroupMember.objects.filter(user=request.user, group=group_id).first()
+        group_info = ChatGroup.objects.filter(pk=group_id).first()
 
         if not group_info:
-            return Response({"message": "You are not a member of this group."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"message": "Group not found!"}, status=status.HTTP_404_NOT_FOUND)
 
-        group_info.delete()
+        if not group_info.members.filter(id=request.user.id).exists():
+            return Response({"message": "The user is not subscribed to this group!"}, status=status.HTTP_404_NOT_FOUND)
+        
+        group_info.members.remove(request.user)
         return Response({"message": "You have successfully left the group."}, status=status.HTTP_204_NO_CONTENT)
 
 
 class SendNotificationAPIView(APIView):
+    permission_classes = (IsAuthenticated, )
+
     @swagger_auto_schema(
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
@@ -103,6 +131,8 @@ class SendNotificationAPIView(APIView):
 
 
 class SaveNotificationAPIView(APIView):
+    permission_classes = (IsAuthenticated, )
+
     def post(self, request, *args, **kwargs):
         send_user_id = request.data.get("send_user_id")
         subscription = request.data.get("subscription")

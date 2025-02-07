@@ -5,7 +5,7 @@ from asgiref.sync import async_to_sync
 from channels.generic.websocket import WebsocketConsumer
 from django.utils import timezone
 
-from .models import ChatMessage, GroupMessage, ChatGroup, GroupMember, CustomUser
+from .models import ChatMessage, GroupMessage, ChatGroup, CustomUser
 
 redis_client = redis.StrictRedis(host='127.0.0.1', port=6379, db=0, decode_responses=True)
 
@@ -122,6 +122,7 @@ class UserChatConsumer(WebsocketConsumer):
             msg.save()
 
 
+
 class ChatGroupConsumer(WebsocketConsumer):
     def connect(self):
         """Foydalanuvchini tekshirish va chat guruhiga qo'shish"""
@@ -134,8 +135,7 @@ class ChatGroupConsumer(WebsocketConsumer):
         if not self.group_info:
             return self.close()
 
-        check_user_group = GroupMember.objects.filter(group=self.group_info, user=self.user).first()
-        if not check_user_group:
+        if not self.group_info.members.filter(id=self.user.id).exists():
             return self.close()
 
         self.group_channel_name = f"group_{group_username}"
@@ -173,9 +173,16 @@ class ChatGroupConsumer(WebsocketConsumer):
         GroupMessage.objects.create(
             group=self.group_info,
             from_user=self.user,
-            message=message,
-            created_at=created_at,
-            update_at=created_at
+            message=message
         )
 
         self.send(text_data=json.dumps({"sender": sender, "message": message, "created_at": created_at}))
+
+    def _save_message_database(self, message: str):
+        """Save message to database"""
+        online_users = redis_client.smembers("online_users")
+        group_members = self.group_info.members.all()
+        for member in group_members:
+            if member.id in online_users:
+                pass
+

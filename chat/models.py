@@ -55,17 +55,3 @@ class GroupMessage(models.Model):
 
     def __str__(self):
         return self.message[:30] if self.message else "No Message"
-
-
-class GroupMember(models.Model):
-    group = models.ForeignKey(ChatGroup, on_delete=models.CASCADE)
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        verbose_name = "Group Member"
-        verbose_name_plural = "Group Members"
-        ordering = ["-created_at"]
-
-    def __str__(self):
-        return f"{self.user.username} in {self.group.username}" if self.user else "Delete account"
