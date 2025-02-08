@@ -132,21 +132,20 @@ class ChatGroupConsumer(WebsocketConsumer):
 
         group_username = self.scope['url_route']['kwargs']['username']
         self.group_info = ChatGroup.objects.filter(username=group_username).first()
-        if not self.group_info:
+
+        if not self.group_info or not self.group_info.members.filter(id=self.user.id).exists():
             return self.close()
 
-        if not self.group_info.members.filter(id=self.user.id).exists():
-            return self.close()
-
+        self._check_user_online()
         self.group_channel_name = f"group_{group_username}"
-        async_to_sync(self.channel_layer.group_add)(
-            self.group_channel_name,
-            self.channel_name
-        )
+        async_to_sync(self.channel_layer.group_add)(self.group_channel_name, self.channel_name)
         self.accept()
+
+        self._delivery_group_messages()
 
     def disconnect(self, code):
         """Foydalanuvchini chat guruhidan chiqarish"""
+        self._update_last_online()
         if hasattr(self, "group_channel_name"):
             async_to_sync(self.channel_layer.group_discard)(self.group_channel_name, self.channel_name)
         self.close(code=code)
@@ -156,33 +155,66 @@ class ChatGroupConsumer(WebsocketConsumer):
         if not text_data:
             return
 
+        self.message = self._save_message_database(text_data)
         async_to_sync(self.channel_layer.group_send)(
             self.group_channel_name,
             {
                 "type": "chat.message",
-                "sender": self.user.username,
-                "message": text_data
+                "message_id": self.message.id,
+                "sender": self.message.from_user.username,
+                "message": self.message.message,
+                "created_at": str(self.message.created_at),
+                "update_at": str(self.message.update_at)
             }
         )
 
     def chat_message(self, event):
-        message = event['message']
-        sender = event['sender']
-        created_at = str(timezone.now())
-
-        GroupMessage.objects.create(
-            group=self.group_info,
-            from_user=self.user,
-            message=message
+        self.send(text_data=json.dumps(
+            {
+                "message_id": event['message_id'],
+                "sender": event['sender'],
+                "message": event['message'],
+                "created_at": event['created_at'],
+                "update_at": event['update_at']
+            })
         )
-
-        self.send(text_data=json.dumps({"sender": sender, "message": message, "created_at": created_at}))
+        self._mark_message_delivered()
 
     def _save_message_database(self, message: str):
-        """Save message to database"""
-        online_users = redis_client.smembers("online_users")
-        group_members = self.group_info.members.all()
-        for member in group_members:
-            if member.id in online_users:
-                pass
+        """Xabarni saqlash va unga yetkazilganini belgilash"""
+        group_message = GroupMessage.objects.create(group=self.group_info, from_user=self.user, message=message)
+        return group_message
 
+    def _mark_message_delivered(self):
+        """Xabar foydalanuvchiga yetib borgandan keyin uni yetkazilgan deb belgilash"""
+        if self.message and not self.message.is_delivery.filter(id=self.user.id).exists():
+            self.message.is_delivery.add(self.user)
+
+    def _check_user_online(self):
+        online_user = redis_client.sismember("online_users", self.user.id)
+        if not online_user:
+            redis_client.sadd("online_users", self.user.id)    
+
+    def _update_last_online(self):
+        online_user = redis_client.sismember("online_users", self.user.id)
+        if online_user:
+            redis_client.srem("online_users", self.user.id)
+            CustomUser.objects.filter(id=self.user.id).update(last_online=timezone.now())
+
+    def _delivery_group_messages(self):
+        """Delivery message"""
+        undelivery_messages = GroupMessage.objects.filter(group=self.group_info).exclude(is_delivery=self.user)
+        if not undelivery_messages.exists():
+            return
+        
+        message_data = [{
+            "message_id": msg.id,
+            "sender": msg.from_user.username,
+            "message": msg.message,
+            "created_at": str(msg.created_at),
+            "update_at": str(msg.update_at)
+        } for msg in undelivery_messages]
+
+        self.send(text_data=json.dumps(message_data))
+        for msg in undelivery_messages:
+            msg.is_delivery.add(self.user)
