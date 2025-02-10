@@ -15,7 +15,6 @@ from django.core.files.storage import default_storage
 from .serializers import CustomUserModelSerializer, ChatMessageModelSerializer, ChatGroupModelSerializer, ChatGroupMessageModelSerializer
 from .models import ChatMessage, ChatGroup, GroupMessage, CustomUser
 from .permissions import OwnerBasePermission, GroupOwnerPermission
-from config import settings
 
 
 class UserModelViewSet(ModelViewSet):
@@ -187,5 +186,4 @@ class UploadFileAPIView(APIView):
             return Response({"error": "The chat_type field must be 'private' or 'group'!"}, status=status.HTTP_400_BAD_REQUEST)
 
         file_path = default_storage.save(f"{chat_type}_files/{file.name}", file)
-        file_url = f"{file_path}"
-        return Response({"file_url": file_url}, status=status.HTTP_201_CREATED)
+        return Response({"file_url": file_path}, status=status.HTTP_201_CREATED)

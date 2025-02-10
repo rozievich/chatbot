@@ -137,6 +137,6 @@ STATIC_URL = 'static/'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
-MAX_UPLOAD_SIZE = 500 * 1024 * 1024
+MAX_UPLOAD_SIZE = 1 * 1024 ** 3
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
