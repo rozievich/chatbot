@@ -5,14 +5,17 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView, RetrieveAPIView, RetrieveUpdateDestroyAPIView, DestroyAPIView
-from django.db.models import Q
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.parsers import MultiPartParser, FormParser
+from django.db.models import Q
+from django.core.files.storage import default_storage
 
 from .serializers import CustomUserModelSerializer, ChatMessageModelSerializer, ChatGroupModelSerializer, ChatGroupMessageModelSerializer
 from .models import ChatMessage, ChatGroup, GroupMessage, CustomUser
 from .permissions import OwnerBasePermission, GroupOwnerPermission
+from config import settings
 
 
 class UserModelViewSet(ModelViewSet):
@@ -148,3 +151,42 @@ class SaveNotificationAPIView(APIView):
         )
 
         return Response({"message": "Subscription saved successfully"})
+
+
+class UploadFileAPIView(APIView):
+    parser_classes = (FormParser, MultiPartParser)
+
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter(
+                "file",
+                openapi.IN_FORM,
+                description="Downloadable file",
+                type=openapi.TYPE_FILE,
+                required=True
+            ),
+            openapi.Parameter(
+                "chat_type",
+                openapi.IN_FORM,
+                description="Chat type: 'private' or 'group'",
+                type=openapi.TYPE_STRING,
+                enum=["private", "group"],
+                required=True
+            )
+        ]
+    )
+
+    def post(self, request, *args, **kwargs):
+        file = request.FILES.get("file")
+        chat_type = request.data.get("chat_type")
+
+        if not file:
+            return Response({'error': 'No file uploaded'}, status=400)
+        
+        if chat_type not in ["private", "group"]:
+            return Response({"error": "The chat_type field must be 'private' or 'group'!"}, status=status.HTTP_400_BAD_REQUEST)
+
+        file_path = default_storage.save(f"{chat_type}_files/{file.name}", file)
+        file_url = f"{settings.MEDIA_URL}{file_path}"
+        return Response({"file_url": file_url}, status=status.HTTP_201_CREATED)
+

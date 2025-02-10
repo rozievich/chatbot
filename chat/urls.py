@@ -10,7 +10,8 @@ from .views import (
     GroupMemberDestroyAPIView,
     SendNotificationAPIView,
     SaveNotificationAPIView,
-    GroupMemberAPIView
+    GroupMemberAPIView,
+    UploadFileAPIView,
 )
 
 router = DefaultRouter()
@@ -19,6 +20,7 @@ router.register("groups", ChatGroupModelViewSet, basename="groups")
 router.register("users", UserModelViewSet, basename="users")
 
 urlpatterns = [
+    path('file/upload/', UploadFileAPIView.as_view(), name="chat_file_upload"),
     path('push/send/', SendNotificationAPIView.as_view(), name="save_push_notification"),
     path('push/save/', SaveNotificationAPIView.as_view(), name="save_push_notification"),
     path('group-member/', GroupMemberAPIView.as_view(), name="group_member_create"),

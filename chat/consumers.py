@@ -28,9 +28,9 @@ class UserChatConsumer(WebsocketConsumer):
         self.close(code=code)
 
     def receive(self, text_data=None):
-        message_text, receiver_username = self._extract_message_data(text_data)
+        message_text, receiver_username, file_url = self._extract_message_data(text_data)
 
-        if not receiver_username and not message_text:
+        if not receiver_username and not (message_text or file_url):
             self.close()
             return
 
@@ -41,17 +41,18 @@ class UserChatConsumer(WebsocketConsumer):
 
         self.user_chat_name = self._generate_user_chat_name(receiver_user)
         self._add_user_to_channel()
-        self._send_message_to_channel(message_text, receiver_user)
-        self._save_message(message_text, receiver_user)
+        self._send_message_to_channel(message_text, file_url, receiver_user)
+        self._save_message(message_text, file_url, receiver_user)
 
     def chat_message(self, event):
         message = event["message"]
         receiver = event['receiver']
         sender = event['sender']
+        file_url = event['file_url']
         created_at = str(timezone.now())
 
         self.send(text_data=json.dumps(
-            {"receiver": receiver, "sender": sender, "message": message, "created_at": created_at}))
+            {"receiver": receiver, "sender": sender, "message": message, "file_url": file_url, "created_at": created_at}))
 
     def _update_last_online(self):
         online_user = redis_client.sismember("online_users", self.sender_user.id)
@@ -68,9 +69,9 @@ class UserChatConsumer(WebsocketConsumer):
         """Extract message data"""
         try:
             json_data = json.loads(text_data)
-            return json_data.get("message"), json_data.get('receiver_username')
+            return json_data.get("message"), json_data.get('receiver_username'), json_data.get("file_url")
         except json.JSONDecodeError:
-            return None, None
+            return None, None, None
 
     def _get_receiver_user(self, receiver_username: str):
         """Get receiver user info"""
@@ -90,22 +91,22 @@ class UserChatConsumer(WebsocketConsumer):
             self.channel_name
         )
 
-    def _send_message_to_channel(self, message_text, receiver_user):
+    def _send_message_to_channel(self, message_text, file_url, receiver_user):
         """Send message to channel"""
         async_to_sync(self.channel_layer.group_send)(
             self.user_chat_name,
-            {"type": "chat.message", "message": message_text, "sender": self.sender_user.username,
+            {"type": "chat.message", "message": message_text, "file_url": file_url, "sender": self.sender_user.username,
              "receiver": receiver_user.username}
         )
 
-    def _save_message(self, message_text, receiver_user):
+    def _save_message(self, message_text, file_url, receiver_user):
         """Save message to database"""
         if self.sender_user.is_authenticated and receiver_user.is_authenticated:
             client_status = redis_client.sismember("online_users", receiver_user.id)
             if client_status:
-                ChatMessage.objects.create(from_user=self.sender_user, to_user=receiver_user, message=message_text, is_delivery=True)
+                ChatMessage.objects.create(from_user=self.sender_user, to_user=receiver_user, message=message_text, file=file_url, is_delivery=True)
             else:
-                ChatMessage.objects.create(from_user=self.sender_user, to_user=receiver_user, message=message_text)
+                ChatMessage.objects.create(from_user=self.sender_user, to_user=receiver_user, message=message_text, file=file_url)
 
     def _delivery_user_messages(self):
         undelivery_messages = ChatMessage.objects.filter(to_user=self.sender_user, is_delivery=False)
@@ -115,7 +116,8 @@ class UserChatConsumer(WebsocketConsumer):
                     "receiver": self.sender_user.username,
                     "sender": msg.from_user.username,
                     "created_at": str(msg.created_at),
-                    "message": msg.message
+                    "message": msg.message,
+                    "file_url": msg.file.url
                 }
             ))
             msg.is_delivery = True
