@@ -19,6 +19,12 @@ class CustomUserModelSerializer(ModelSerializer):
         model = CustomUser
         exclude = "groups", "user_permissions"
 
+    def create(self, validated_data):
+        user = CustomUser(**validated_data)
+        user.set_password(validated_data['password'])
+        user.save()
+        return user
+
     def to_representation(self, instance):
         represantation = super().to_representation(instance)
         user_status = redis_client.sismember("online_users", represantation['id'])
