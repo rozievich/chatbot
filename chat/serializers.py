@@ -39,6 +39,14 @@ class ChatMessageModelSerializer(ModelSerializer):
         model = ChatMessage
         fields = "__all__"
 
+    def validate(self, attrs):
+        message = attrs.get('message')
+        file = attrs.get('file')
+
+        if not message and not file:
+            raise ValidationError("Sending a message or file is mandatory!")
+        return attrs
+
 
 class ChatGroupModelSerializer(ModelSerializer):
     owner = HiddenField(default=CurrentUserDefault())
