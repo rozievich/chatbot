@@ -154,10 +154,11 @@ class ChatGroupConsumer(WebsocketConsumer):
 
     def receive(self, text_data=None, bytes_data=None):
         """Xabarlarni qabul qilish va yuborish"""
-        if not text_data:
+        message_text, file_url = self._extract_message_data(text_data)
+        if not message_text and not file_url:
             return
 
-        self.message = self._save_message_database(text_data)
+        self.message = self._save_message_database(message_text, file_url)
         async_to_sync(self.channel_layer.group_send)(
             self.group_channel_name,
             {
@@ -182,9 +183,9 @@ class ChatGroupConsumer(WebsocketConsumer):
         )
         self._mark_message_delivered()
 
-    def _save_message_database(self, message: str):
+    def _save_message_database(self, message: str, file_url: str):
         """Xabarni saqlash va unga yetkazilganini belgilash"""
-        group_message = GroupMessage.objects.create(group=self.group_info, from_user=self.user, message=message)
+        group_message = GroupMessage.objects.create(group=self.group_info, from_user=self.user, message=message, file=file_url)
         return group_message
 
     def _mark_message_delivered(self):
@@ -208,11 +209,12 @@ class ChatGroupConsumer(WebsocketConsumer):
         undelivery_messages = GroupMessage.objects.filter(group=self.group_info).exclude(is_delivery=self.user)
         if not undelivery_messages.exists():
             return
-        
+
         message_data = [{
             "message_id": msg.id,
             "sender": msg.from_user.username,
             "message": msg.message,
+            "file_url": msg.file.url,
             "created_at": str(msg.created_at),
             "update_at": str(msg.update_at)
         } for msg in undelivery_messages]
@@ -220,3 +222,11 @@ class ChatGroupConsumer(WebsocketConsumer):
         self.send(text_data=json.dumps(message_data))
         for msg in undelivery_messages:
             msg.is_delivery.add(self.user)
+
+    def _extract_message_data(self, text_data=None):
+        """Extract message data"""
+        try:
+            json_data = json.loads(text_data)
+            return json_data.get("message"), json_data.get("file_url")
+        except json.JSONDecodeError:
+            return None, None

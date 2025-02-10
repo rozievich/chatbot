@@ -187,6 +187,5 @@ class UploadFileAPIView(APIView):
             return Response({"error": "The chat_type field must be 'private' or 'group'!"}, status=status.HTTP_400_BAD_REQUEST)
 
         file_path = default_storage.save(f"{chat_type}_files/{file.name}", file)
-        file_url = f"{settings.MEDIA_URL}{file_path}"
+        file_url = f"{file_path}"
         return Response({"file_url": file_url}, status=status.HTTP_201_CREATED)
-
