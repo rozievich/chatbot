@@ -104,23 +104,22 @@ class UserChatConsumer(WebsocketConsumer):
         """Save message to database"""
         if self.sender_user.is_authenticated and receiver_user.is_authenticated:
             client_status = redis_client.sismember("online_users", receiver_user.id)
-            encrypt_text, sh_file_url = encrypt_message_and_file(message_text, file_url)
+            encrypt_text = encrypt_message_and_file(message_text)
             if client_status:
-                ChatMessage.objects.create(from_user=self.sender_user, to_user=receiver_user, message=encrypt_text, file=sh_file_url, is_delivery=True)
+                ChatMessage.objects.create(from_user=self.sender_user, to_user=receiver_user, message=encrypt_text, file=file_url, is_delivery=True)
             else:
-                ChatMessage.objects.create(from_user=self.sender_user, to_user=receiver_user, message=encrypt_text, file=sh_file_url)
+                ChatMessage.objects.create(from_user=self.sender_user, to_user=receiver_user, message=encrypt_text, file=file_url)
 
     def _delivery_user_messages(self):
         undelivery_messages = ChatMessage.objects.filter(to_user=self.sender_user, is_delivery=False)
         for msg in undelivery_messages:
-            sh_message_text, sh_file_url = decrypt_message_and_file(msg.message, msg.file.url[7:])
-            print(sh_file_url, sh_message_text)
+            sh_message_text = decrypt_message_and_file(msg.message)
             self.send(text_data=json.dumps(
                 {
                     "receiver": self.sender_user.username,
                     "sender": msg.from_user.username,
                     "created_at": str(msg.created_at),
-                    "message": msg.message,
+                    "message": sh_message_text,
                     "file_url": msg.file.url
                 }
             ))
