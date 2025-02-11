@@ -188,7 +188,8 @@ class ChatGroupConsumer(WebsocketConsumer):
 
     def _save_message_database(self, message: str, file_url: str):
         """Xabarni saqlash va unga yetkazilganini belgilash"""
-        group_message = GroupMessage.objects.create(group=self.group_info, from_user=self.user, message=message, file=file_url)
+        sh_message_text = encrypt_message_and_file(message)
+        group_message = GroupMessage.objects.create(group=self.group_info, from_user=self.user, message=sh_message_text, file=file_url)
         return group_message
 
     def _mark_message_delivered(self):
@@ -216,7 +217,7 @@ class ChatGroupConsumer(WebsocketConsumer):
         message_data = [{
             "message_id": msg.id,
             "sender": msg.from_user.username,
-            "message": msg.message,
+            "message": decrypt_message_and_file(msg.message),
             "file_url": msg.file.url,
             "created_at": str(msg.created_at),
             "update_at": str(msg.update_at)

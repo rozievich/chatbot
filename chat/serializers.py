@@ -5,7 +5,7 @@ from rest_framework.exceptions import ValidationError
 
 from .models import ChatMessage, ChatGroup, GroupMessage, CustomUser
 from .consumers import redis_client
-
+from .utils import decrypt_message_and_file
 
 class CustomUserModelSerializer(ModelSerializer):
     username = CharField(max_length=32, default="string")
@@ -47,6 +47,11 @@ class ChatMessageModelSerializer(ModelSerializer):
             raise ValidationError("Sending a message or file is mandatory!")
         return attrs
 
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['message'] = decrypt_message_and_file(representation['message'])
+        return representation
+
 
 class ChatGroupModelSerializer(ModelSerializer):
     owner = HiddenField(default=CurrentUserDefault())
@@ -68,3 +73,8 @@ class ChatGroupMessageModelSerializer(ModelSerializer):
     class Meta:
         model = GroupMessage
         fields = "__all__"
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['message'] = decrypt_message_and_file(representation['message'])
+        return representation
