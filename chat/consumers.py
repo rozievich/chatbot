@@ -6,6 +6,7 @@ from channels.generic.websocket import WebsocketConsumer
 from django.utils import timezone
 
 from .models import ChatMessage, GroupMessage, ChatGroup, CustomUser
+from .utils import encrypt_message_and_file, decrypt_message_and_file
 
 redis_client = redis.StrictRedis(host='127.0.0.1', port=6379, db=0, decode_responses=True)
 
@@ -69,7 +70,7 @@ class UserChatConsumer(WebsocketConsumer):
         """Extract message data"""
         try:
             json_data = json.loads(text_data)
-            return json_data.get("message"), json_data.get('receiver_username'), json_data.get("file_url")
+            return json_data.get('message'), json_data.get('receiver_username'), json_data.get('file_url')
         except json.JSONDecodeError:
             return None, None, None
 
@@ -103,14 +104,17 @@ class UserChatConsumer(WebsocketConsumer):
         """Save message to database"""
         if self.sender_user.is_authenticated and receiver_user.is_authenticated:
             client_status = redis_client.sismember("online_users", receiver_user.id)
+            encrypt_text, sh_file_url = encrypt_message_and_file(message_text, file_url)
             if client_status:
-                ChatMessage.objects.create(from_user=self.sender_user, to_user=receiver_user, message=message_text, file=file_url, is_delivery=True)
+                ChatMessage.objects.create(from_user=self.sender_user, to_user=receiver_user, message=encrypt_text, file=sh_file_url, is_delivery=True)
             else:
-                ChatMessage.objects.create(from_user=self.sender_user, to_user=receiver_user, message=message_text, file=file_url)
+                ChatMessage.objects.create(from_user=self.sender_user, to_user=receiver_user, message=encrypt_text, file=sh_file_url)
 
     def _delivery_user_messages(self):
         undelivery_messages = ChatMessage.objects.filter(to_user=self.sender_user, is_delivery=False)
         for msg in undelivery_messages:
+            sh_message_text, sh_file_url = decrypt_message_and_file(msg.message, msg.file.url[7:])
+            print(sh_file_url, sh_message_text)
             self.send(text_data=json.dumps(
                 {
                     "receiver": self.sender_user.username,
