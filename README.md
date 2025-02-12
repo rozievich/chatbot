@@ -16,7 +16,7 @@ Bu loyiha **Django + WebSocket** asosida qurilgan real vaqt chat tizimidir. Foyd
 ### 1. Loyihani yuklab olish
 ```bash
 git clone https://github.com/rozievich/chatbot.git
-cd websocket-chat
+cd chatbot
 ```
 
 ### 2. Virtual muhit yaratish va kutubxonalarni o‘rnatish
