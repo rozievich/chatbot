@@ -29,6 +29,15 @@ class UserModelViewSet(ModelViewSet):
         return Response({"message": "User deactivated, token is now invalid"}, status=status.HTTP_204_NO_CONTENT)
 
 
+class ProfileModelAPIView(APIView):
+    serializer_class = CustomUserModelSerializer
+    permission_classes = (IsAuthenticated, )
+
+    def get(self, request, *args, **kwargs):
+        user = self.serializer_class(request.user).data
+        return Response(user, status=status.HTTP_200_OK)
+
+
 class ChatMessageListAPIView(ListAPIView):
     serializer_class = ChatMessageModelSerializer
     queryset = ChatMessage.objects.all()
@@ -37,6 +46,17 @@ class ChatMessageListAPIView(ListAPIView):
     def get_queryset(self):
         username = self.request.user.username
         return ChatMessage.objects.filter(Q(from_user__username=username) | Q(to_user__username=username))
+
+
+class ChatUserMessageAPIView(ListAPIView):
+    serializer_class = ChatMessageModelSerializer
+    queryset = ChatMessage.objects.filter()
+    permission_classes = (IsAuthenticated, )
+    
+    def get_queryset(self):
+        user = self.request.user
+        user_id = self.kwargs.get("user_id")
+        return ChatMessage.objects.filter(Q(from_user__id=user_id, to_user__id=user.id) | Q(from_user__id=user.id, to_user__id=user_id))
 
 
 class ChatMessageRetrieveAPIView(RetrieveAPIView):

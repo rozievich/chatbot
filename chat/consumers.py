@@ -37,7 +37,7 @@ class UserChatConsumer(WebsocketConsumer):
             return
 
         receiver_user = self._get_receiver_user(receiver_username)
-        if not receiver_user:
+        if not receiver_user or receiver_user == self.sender_user:
             self.close()
             return
 

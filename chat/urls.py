@@ -12,6 +12,8 @@ from .views import (
     SaveNotificationAPIView,
     GroupMemberAPIView,
     UploadFileAPIView,
+    ProfileModelAPIView,
+    ChatUserMessageAPIView
 )
 
 router = DefaultRouter()
@@ -20,6 +22,7 @@ router.register("groups", ChatGroupModelViewSet, basename="groups")
 router.register("users", UserModelViewSet, basename="users")
 
 urlpatterns = [
+    path('users/my-profile/', ProfileModelAPIView.as_view(), name="my_profile"),
     path('file/upload/', UploadFileAPIView.as_view(), name="chat_file_upload"),
     path('push/send/', SendNotificationAPIView.as_view(), name="save_push_notification"),
     path('push/save/', SaveNotificationAPIView.as_view(), name="save_push_notification"),
@@ -28,6 +31,7 @@ urlpatterns = [
     path('group-messages/', ChatGroupMessageListAPIView.as_view(), name="get_group_messages"),
     path('group-messages/<int:pk>/', ChatGroupMessageRetrieveUpdateDestroyAPIView.as_view(), name="group_messages"),
     path('messages/', ChatMessageListAPIView.as_view(), name="all_messages"),
+    path('messages/user/<int:user_id>/', ChatUserMessageAPIView.as_view(), name="user_messages"),
     path('messages/<int:pk>/', ChatMessageRetrieveAPIView.as_view(), name="get_message"),
     path('', include(router.urls)),
 ]
