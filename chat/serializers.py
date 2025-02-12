@@ -7,6 +7,7 @@ from .models import ChatMessage, ChatGroup, GroupMessage, CustomUser
 from .consumers import redis_client
 from .utils import decrypt_message_and_file
 
+
 class CustomUserModelSerializer(ModelSerializer):
     username = CharField(max_length=32, default="string")
     password = CharField(max_length=250, write_only=True, default="string")

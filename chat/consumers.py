@@ -19,6 +19,7 @@ class UserChatConsumer(WebsocketConsumer):
 
         self.sender_user = self.scope['user']
         self._check_user_online()
+        self._add_user_to_channel()
         self.accept()
         self._delivery_user_messages()
 
@@ -41,7 +42,6 @@ class UserChatConsumer(WebsocketConsumer):
             return
 
         self.user_chat_name = self._generate_user_chat_name(receiver_user)
-        self._add_user_to_channel()
         self._send_message_to_channel(message_text, file_url, receiver_user)
         self._save_message(message_text, file_url, receiver_user)
 
@@ -70,7 +70,7 @@ class UserChatConsumer(WebsocketConsumer):
         """Extract message data"""
         try:
             json_data = json.loads(text_data)
-            return json_data.get('message'), json_data.get('receiver_username'), json_data.get('file_url')
+            return json_data.get('message'), json_data.get('username'), json_data.get('file_url')
         except json.JSONDecodeError:
             return None, None, None
 
@@ -88,14 +88,14 @@ class UserChatConsumer(WebsocketConsumer):
     def _add_user_to_channel(self):
         """Add user to channel"""
         async_to_sync(self.channel_layer.group_add)(
-            self.user_chat_name,
+            f"private_chat_{self.sender_user.id}",
             self.channel_name
         )
 
     def _send_message_to_channel(self, message_text, file_url, receiver_user):
         """Send message to channel"""
         async_to_sync(self.channel_layer.group_send)(
-            self.user_chat_name,
+            f"private_chat_{receiver_user.id}",
             {"type": "chat.message", "message": message_text, "file_url": file_url, "sender": self.sender_user.username,
              "receiver": receiver_user.username}
         )
@@ -120,7 +120,7 @@ class UserChatConsumer(WebsocketConsumer):
                     "sender": msg.from_user.username,
                     "created_at": str(msg.created_at),
                     "message": sh_message_text,
-                    "file_url": msg.file.url
+                    "file_url": msg.file.url if msg.file else ""
                 }
             ))
             msg.is_delivery = True
