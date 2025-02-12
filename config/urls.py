@@ -31,7 +31,7 @@ urlpatterns = [
     path('chat/token/verify/', TokenVerifyView.as_view(), name="token_verify"),
     path('swdoc/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
-    path('', include('chat.urls'))
+    path('api/', include('chat.urls'))
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
